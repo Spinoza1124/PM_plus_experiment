@@ -1,0 +1,4 @@
+data/*
+.venv/*
+IEMOCAP_multi.pkl
+pretrain_model/*
