@@ -22,6 +22,8 @@ dependencies = [
     "pysndfx==0.3.6",
     "scikit_learn==1.0",
     "openpyxl>=3.1.5",
+    "tensorboard>=2.8.0",
+    "pyyaml>=6.0.2",
 ]
 
 [[tool.uv.index]]
