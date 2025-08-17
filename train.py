@@ -1,10 +1,15 @@
-from ast import parse
+from sklearn import metrics
 from utils.parse_config import ConfigParser
-from utils.train_args import TrainArgs
 import torch
 import argparse
 import numpy as np
 import collections
+import data_loader.data_loaders as module_data
+import model.model as module_arch
+from trainer import Trainer
+import model.loss as module_loss
+import model.metric as module_metric
+from utils import prepare_device
 
 # 固定随机数种子
 SEED = 123
@@ -23,7 +28,32 @@ def main(config: ConfigParser) -> None:
 
     data_loader = config.init_obj('data_loader', module_data)
     valid_data_loader = data_loader.split_validation()
+    
+    # 构造网络模型，然后在控制台打印
+    model = config.init_obj('arch', module_arch)
+    logger.info(model)
 
+    device, device_ids = prepare_device(config['n_gpu'])
+    model = model.to(device)
+    if len(device_ids) > 1:
+        model = torch.nn.DataParallel(model, device_ids=device_ids)
+    
+    criterion = getattr(module_loss, config['loss'])
+    metrics = [getattr(module_metric, met) for met in config['metrics']]
+    
+    trainable_params = filter(lambda p: p.requires_grad, model.parameters())
+    optimizer = config.init_obj('optimizer', torch.optim, trainable_params)
+    lr_scheduler = config.init_obj('lr_scheduler', torch.optim.lr_scheduler, optimizer)
+    
+    trainer = Trainer(model, criterion, metrics, optimizer,
+                      config=config,
+                      device=device,
+                      data_loader=data_loader,
+                      valid_data_loader=valid_data_loader,
+                      lr_scheduler=lr_scheduler)
+    
+    trainer.train()
+    
 
 if __name__ == "__main__":
     # 创建一个解析器对象，把命令行里敲的“字符串”变成 Python 可以直接拿来用的“变量”
@@ -40,6 +70,5 @@ if __name__ == "__main__":
         CustomArgs(['--lr', '--learning_rate'], type=float, target='optimizer;args;lr'),
         CustomArgs(['--bs', '--batch_size'], type=int, target='data_loader;args;batch_size')
     ]
-
     config = ConfigParser.from_args(args, options)
     main(config)

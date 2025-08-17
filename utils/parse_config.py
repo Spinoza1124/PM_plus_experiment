@@ -1,3 +1,4 @@
+from __future__ import annotations
 from argparse import ArgumentParser
 import os
 import logging
@@ -9,14 +10,11 @@ from train import CustomArgs
 from utils import read_yaml, write_yaml
 from functools import reduce, partial
 from operator import getitem
-from typing import Dict, Optional, List
-from __future__ import annotations
-
-from utils.train_args import TrainArgs
+from typing import Dict, Optional, List, Any
 
 
 class ConfigParser:
-    def __init__(self, config: Dict[str, Any], resume: Optional[str] = None, modification=None, run_id=None) -> None:
+    def __init__(self, config: Dict[str, Any], resume: Optional[Path] = None, modification=None, run_id=None) -> None:
         """
         解析配置文件的类。处理训练、初始化，检查点保存和日志
         :param config: 配置文件
@@ -36,14 +34,14 @@ class ConfigParser:
         
         # 从配置中获取实验的名称，例如 "MNIST_LeNet".
         #  用于创建有意义的文件夹名称，方便日后查找和区分不同的实验。
-        expre_name = self.config['name']
+        exper_name = self.config['name']
         # 检查是否传入了 run_id。如果没有，就使用当前的日期和时间（格式如 0816_102030）作为默认的 run_id。
         if run_id is None:
             run_id = datetime.now().strftime(r'%m%d_%H%M%S')
         # 使用 pathlib 的 / 操作符构建最终的模型保存路径和日志保存路径。例如 saved/models/MNIST_LeNet/0816_102030/。
         # 建立一个清晰、结构化的目录树。将模型和日志分开存放，并按实验名称和运行ID进行组织，是管理大量实验的最佳实践。
         self._save_dir = save_dir / 'models' / exper_name / run_id
-        self._log_dir = save_dir / 'log' / expre_name / run_id
+        self._log_dir = save_dir / 'log' / exper_name / run_id
 
         # 创建上面定义的模型保存目录和日志目录。
         # 程序需要这些文件夹来存放文件。parents=True 选项会自动创建所有必需的父目录（类似 mkdir -p）。exist_ok=True 保证了如果目录已经存在，程序不会报错（这在恢复训练时很有用）。
@@ -57,26 +55,26 @@ class ConfigParser:
 
         # 调用外部函数来配置 Python 的 logging 模块，使其将日志保存到 self.log_dir 中。同时定义一个字典，将简单的数字（0, 1, 2）映射到标准的日志级别。
         #  集中管理日志配置。log_levels 字典提供了一个用户友好的接口，可以通过一个简单的数字来控制日志的详细程度（verbosity）。
-        setpu_logging(self.log_dir)
+        setup_logging(self.log_dir)
         self.log_levels = {
-            0: logging.WARING,
+            0: logging.WARNING,
             1: logging.INFO,
             2: logging.DEBUG
         }
 
     # 这是一个类方法工厂。它的作用不是操作一个已有的对象，而是根据命令行参数创建并返回一个全新的 ConfigParser 对象。
     @classmethod
-    def from_args(cls, args: ArgumentParser, options: List[CustomArgs]='') -> ConfigParser:
+    def from_args(cls, parser: ArgumentParser, options: List[CustomArgs]=[]) -> ConfigParser:
         """
         从cli 参数初始化类。用于 train 和 test
         """
         # 遍历 options 列表（包含了 --lr, --bs 等自定义选项），并将它们添加到 argparse 解析器中。
         # 动态地将所有自定义的命令行选项注册到 argparse，使其能够被识别和解析。
         for opt in options:
-            args.add_argument(*opt.flags, default=None, type=opt.type)
+            parser.add_argument(*opt.flags, default=None, type=opt.type)
 
         # 解析器对象 变成 解析结果对象.args 不再是“解析器”，而是“解析后的参数集合”，可以直接用 args.lr、args.batch_size 等字段。
-        args = args.parse_args()
+        args = parser.parse_args()
         
         # 如果用户通过 --device 指定了 GPU，就设置 CUDA_VISIBLE_DEVICES 环境变量。
         # 这是在 PyTorch 等框架中控制程序能“看到”哪些 GPU 的标准方法。在程序导入 torch 之前设置此变量，可以有效隔离 GPU。
@@ -174,15 +172,15 @@ def _get_opt_name(flags):
     for flg in flags:
         if flg.startswith('--'):
             return flg.replace('--', '')
-    return flag[0].replace('--', '')
+    return flags[0].replace('--', '')
 
 # 核心魔法之一。它接收一个字典 (tree)，一个用分号分隔的路径字符串 (keys) 和一个值。它会沿着路径找到目标位置并设置新值。
 # 这是实现 target='optimizer;args;lr' 这种深层路径修改的关键。它通过调用 _get_by_path 来首先定位到目标位置的父字典。
-def _set_by_path(tree, keys, value):
-    keys = keys.split(';')
-    _get_by_path(tree, keys[:-1])[keys[-1]] = value
+def _set_by_path(tree: Dict[str, Any], keys: str, value: Any) -> None:
+    key_list = keys.split(';')
+    _get_by_path(tree, key_list[:-1])[keys[-1]] = value
 
 # 另一个核心魔法。它使用 functools.reduce 和 operator.getitem 来沿着 keys 列表在嵌套字典中“向下走”。
 # reduce(getitem, ['optimizer', 'args'], config) 等价于 config['optimizer']['args']。这是一种非常简洁和函数式的编程方式，用于访问深层嵌套的字典元素。
-def _get_by_path(tree, keys):
+def _get_by_path(tree: Dict[str, Any], keys: List[str]) -> Dict[str, Any]:
     return reduce(getitem, keys, tree)
