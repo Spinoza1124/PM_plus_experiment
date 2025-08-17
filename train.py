@@ -57,7 +57,7 @@ def main(config: ConfigParser) -> None:
 
 if __name__ == "__main__":
     # 创建一个解析器对象，把命令行里敲的“字符串”变成 Python 可以直接拿来用的“变量”
-    args = argparse.ArgumentParser(description="协同注意力语音情感识别")
+    args = argparse.ArgumentParser(description="协同注意力语音情感识别训练脚本")
     # 用来指定配置文件的路径
     args.add_argument('-c', '--config', default=None, type=str, help='config file path (default: None)')
     # 用来指定一个之前保存的检查点 (checkpoint) 文件的路径，以便从上次中断的地方继续训练。
