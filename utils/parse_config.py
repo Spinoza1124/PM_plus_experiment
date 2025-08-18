@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Dict, Any
 from datetime import datetime
 from logger import setup_logging
-from train import CustomArgs
 from utils import read_yaml, write_yaml
 from functools import reduce, partial
 from operator import getitem
@@ -30,11 +29,12 @@ class ConfigParser:
 
         # 从配置中读取顶层的保存目录（例如 "saved/"），并使用 pathlib.Path 将其转换为一个路径对象。
         # pathlib 是现代 Python 中处理文件路径的最佳实践。它能跨平台（Windows/Linux/macOS）无缝工作，并且允许使用 / 操作符来拼接路径，比传统的字符串拼接更安全、更清晰。
+        trainer_config = self.config.get('trainer', {})
         save_dir = Path(self.config['trainer']['save_dir'])
         
         # 从配置中获取实验的名称，例如 "MNIST_LeNet".
         #  用于创建有意义的文件夹名称，方便日后查找和区分不同的实验。
-        exper_name = self.config['name']
+        exper_name = self.config.get('name', self.config.get('save_label', 'experiment'))
         # 检查是否传入了 run_id。如果没有，就使用当前的日期和时间（格式如 0816_102030）作为默认的 run_id。
         if run_id is None:
             run_id = datetime.now().strftime(r'%m%d_%H%M%S')

@@ -1,5 +1,4 @@
-from sklearn import metrics
-from utils.parse_config import ConfigParser
+from utils import ConfigParser
 import torch
 import argparse
 import numpy as np
@@ -9,7 +8,6 @@ import model.model as module_arch
 from trainer import Trainer
 import model.loss as module_loss
 import model.metric as module_metric
-from utils import prepare_device
 
 # 固定随机数种子
 SEED = 123
@@ -33,7 +31,22 @@ def main(config: ConfigParser) -> None:
     model = config.init_obj('arch', module_arch)
     logger.info(model)
 
-    device, device_ids = prepare_device(config['n_gpu'])
+    if 'n_gpu' in config.config:
+        gpu_setting = config.config['n_gpu']
+        if isinstance(gpu_setting, list):
+            if len(gpu_setting) > 0:
+                device = torch.device(f'cuda:{gpu_setting[0]}' if torch.cuda.is_available() else 'cpu')
+                device_ids = gpu_setting
+            else:
+                device = torch.device('cpu')
+                device_ids = []
+        else:
+            device = torch.device(f'cuda:{gpu_setting}' if torch.cuda.is_available() else 'cpu')
+            device_ids = [gpu_setting] if gpu_setting >= 0 else []
+    else:
+        device = torch.device('cpu')
+        device_ids = []
+    
     model = model.to(device)
     if len(device_ids) > 1:
         model = torch.nn.DataParallel(model, device_ids=device_ids)
@@ -63,7 +76,7 @@ if __name__ == "__main__":
     # 用来指定一个之前保存的检查点 (checkpoint) 文件的路径，以便从上次中断的地方继续训练。
     args.add_argument('-r', '--resume', default=None, type=str, help='path to latest checkpoint (default: None)')
     # 用来指定使用哪些 GPU
-    args.add_argument('-d', '--device', defualt=None, type=str, help="indices of GPUs to enable (default: all)")
+    args.add_argument('-d', '--device', default=None, type=str, help="indices of GPUs to enable (default: all)")
     # 使用自定义 CLI 选项，根据 YAML 文件中给定的默认值修改配置。这里创建了一个命名元组 (namedtuple)。你可以把它看作一个轻量级的、只有属性没有方法的类。创建一个 CustomArgs 对象会像这样：CustomArgs(flags=[...], type=..., target=...)。
     CustomArgs = collections.namedtuple('CustomArgs', 'flags type target')
     options = [

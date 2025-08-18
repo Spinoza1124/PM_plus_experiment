@@ -1,4 +1,4 @@
 data/*
 .venv/*
 IEMOCAP_multi.pkl
-pretrain_model/*
+wav2vec2-base-960/*
