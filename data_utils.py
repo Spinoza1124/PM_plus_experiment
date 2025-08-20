@@ -342,14 +342,14 @@ class SERDataset:
 
             #Concatenate the corresponding labels
             if train_seg_labels is None:
-                train_seg_labels = features_data[speaker_id]['seg_label'].astype(np.long)
-                train_labels = features_data[speaker_id]['utter_label'].astype(np.long)
+                train_seg_labels = features_data[speaker_id]['seg_label'].astype(np.int64)
+                train_labels = features_data[speaker_id]['utter_label'].astype(np.int64)
             else:
                 train_seg_labels = np.concatenate((train_seg_labels,
-                                               features_data[speaker_id]['seg_label'].astype(np.long)),
+                                               features_data[speaker_id]['seg_label'].astype(np.int64)),
                                                axis=0)
                 train_labels = np.concatenate((train_labels,
-                                               features_data[speaker_id]['utter_label'].astype(np.long)),
+                                               features_data[speaker_id]['utter_label'].astype(np.int64)),
                                                axis=0)
                                              
         self.train_spec_data = train_spec_data
@@ -363,16 +363,16 @@ class SERDataset:
         self.val_spec_data  = features_data[val_speaker_id]['seg_spec'].astype(np.float32)
         self.val_mfcc_data  = features_data[val_speaker_id]['seg_mfcc'].astype(np.float32)
         self.val_audio_data  = features_data[val_speaker_id]['seg_audio'].astype(np.float32)
-        self.val_seg_labels = features_data[val_speaker_id]['seg_label'].astype(np.long)
-        self.val_labels     = features_data[val_speaker_id]['utter_label'].astype(np.long)
+        self.val_seg_labels = features_data[val_speaker_id]['seg_label'].astype(np.int64)
+        self.val_labels     = features_data[val_speaker_id]['utter_label'].astype(np.int64)
         self.val_num_segs   = features_data[val_speaker_id]['seg_num']
 
         #get test spectrograms
         self.test_spec_data  = features_data[test_speaker_id]['seg_spec'].astype(np.float32)
         self.test_mfcc_data  = features_data[test_speaker_id]['seg_mfcc'].astype(np.float32)
         self.test_audio_data  = features_data[test_speaker_id]['seg_audio'].astype(np.float32)
-        self.test_seg_labels = features_data[test_speaker_id]['seg_label'].astype(np.long)
-        self.test_labels     = features_data[test_speaker_id]['utter_label'].astype(np.long)
+        self.test_seg_labels = features_data[test_speaker_id]['seg_label'].astype(np.int64)
+        self.test_labels     = features_data[test_speaker_id]['utter_label'].astype(np.int64)
         self.test_num_segs   = features_data[test_speaker_id]['seg_num']
         '''
         # used when training with leave-one-session-out validation strategy

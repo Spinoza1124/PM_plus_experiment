@@ -14,7 +14,7 @@ str_time = f'{str(localtime.tm_year)}-{str(localtime.tm_mon)}-{str(localtime.tm_
 
 #------------PARAMETERS---------------#
 
-features_file = 'IEMOCAP_multi.pkl'
+features_file = '/mnt/shareEEx/liuyang/code/PM_plus_experiment/data/IEMOCAP_multi/IEMOCAP_multi.pkl'
 
 # LOSO (Leave-One-Speaker-Out) 交叉验证设置
 # 每次选择一个说话人作为测试集，其余作为训练集
