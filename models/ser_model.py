@@ -1,33 +1,30 @@
-from unicodedata import bidirectional
+"""
+AIO -- All Model in One
+"""
+# import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from transformers import Wav2Vec2Model
-from model.AlexNet import SER_AlexNet
+from transformers import  Wav2Vec2Model
+from models.ser_spec import SER_AlexNet
 
-class SER_Model(nn.Module):
+
+# __all__ = ['Ser_Model']
+class Ser_Model(nn.Module):
     def __init__(self):
-        super(SER_Model, self).__init__()
+        super(Ser_Model, self).__init__()
         
         # CNN for Spectrogram
         self.alexnet_model = SER_AlexNet(num_classes=4, in_ch=3, pretrained=True)
         
-        self.post_spec_dropout = nn.Dropout(p = 0.1)
-        self.post_spec_layer = nn.Linear(9216, 128)  # 9216 for cnn, 32768 for ltsm s, 65536 for lstm l
+        self.post_spec_dropout = nn.Dropout(p=0.1)
+        self.post_spec_layer = nn.Linear(9216, 128) # 9216 for cnn, 32768 for ltsm s, 65536 for lstm l
         
-        # LSTM for MFCC
-        self.lstm_mfcc = nn.LSTM(
-                                input_size=40,
-                                hidden_size=256,
-                                num_layers=2,
-                                batch_first=True,
-                                dropout=0.5,
-                                bidirectional=True,
-                                )
-        
+        # LSTM for MFCC        
+        self.lstm_mfcc = nn.LSTM(input_size=40, hidden_size=256, num_layers=2, batch_first=True, dropout=0.5,bidirectional = True) # bidirectional = True
+
         self.post_mfcc_dropout = nn.Dropout(p=0.1)
-        
         self.post_mfcc_layer = nn.Linear(153600, 128) # 40 for attention and 8064 for conv, 32768 for cnn-lstm, 38400 for lstm
         
         # Spectrogram + MFCC  
@@ -35,7 +32,7 @@ class SER_Model(nn.Module):
         self.post_spec_mfcc_att_layer = nn.Linear(256, 149) # 9216 for cnn, 32768 for ltsm s, 65536 for lstm l
                         
         # WAV2VEC 2.0
-        self.wav2vec2_model = Wav2Vec2Model.from_pretrained("/mnt/shareEEx/liuyang/code/PM_plus_experiment/wav2vec2-base-960")
+        self.wav2vec2_model = Wav2Vec2Model.from_pretrained("/mnt/shareEEx/liuyang/code/PM_plus_experiment/pretrain_model/wav2vec2-base-960")
 
         self.post_wav_dropout = nn.Dropout(p=0.1)
         self.post_wav_layer = nn.Linear(768, 128) # 512 for 1 and 768 for 2
@@ -107,3 +104,4 @@ class SER_Model(nn.Module):
         
 
         return output
+    
